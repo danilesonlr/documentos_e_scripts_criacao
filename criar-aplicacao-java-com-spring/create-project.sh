@@ -210,6 +210,7 @@ EOF
 mkdir -p modules/domain/src/main/java/$PACKAGE_PATH
 mkdir -p modules/application/src/main/java/$PACKAGE_PATH
 mkdir -p modules/infrastructure/src/main/java/$PACKAGE_PATH
+mkdir -p modules/infrastructure/src/main/resources
 
 # Criar arquivos de build dos módulos
 cat > modules/domain/build.gradle.kts << 'EOF'
@@ -357,6 +358,340 @@ help: ## Show this help message
 	@echo ""
 	@echo "Targets:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_0-9.-]+:.*?## / {gsub("\\\\n",sprintf("\n%*s"," ",length(": "))); printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+EOF
+
+cat > modules/infrastructure/src/main/resources/application.yml <<EOF
+server:
+  port: 8080
+
+spring:
+  application:
+    name: $PROJECT_NAME
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/ms_banking_fee_management
+    username: MS_BANKING_FEE_MANAGEMENT
+    password: 12345678
+    hikari:
+      minimumIdle: 5
+      maximumPoolSize: 25
+      idleTimeout: 120000
+      connectionTimeout: 300000
+      leakDetectionThreshold: 300000
+      poolName: HikariPoolBankingPixPayment
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+logging:
+  pattern:
+    level: "%5p [%X{traceId:-none}] [%X{spanId:-none}]"
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSX} %5p [%X{traceId:-}] [%X{spanId:-}] --- [%t] %logger{3} : %m%n"
+  level:
+    org.mongodb.driver: ERROR
+
+management:
+  zipkin:
+    tracing:
+      endpoint:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+EOF
+
+cat > modules/infrastructure/src/main/resources/messages.properties <<'EOF'
+# ============================================================
+# Message Bundle
+# ============================================================
+
+# CreateFeeDefinitionUseCase
+# br.com.valecard.banking.fee.management.application.usecase.CreateFeeDefinitionUseCase.Error.FEE_DEFINITION_ALREADY_EXISTS=Já existe uma definição de taxa para o código informado.
+EOF
+
+
+cat > README.md <<EOF
+# $PROJECT_NAME
+
+Projeto base para desenvolvimento de microsserviços Java utilizando **Spring Boot**, **Clean Architecture**, **DDD** e princípios **SOLID**, seguindo o padrão **API First**.
+
+---
+
+# Tecnologias
+
+- Java 21
+- Spring Boot 3
+- Gradle Kotlin DSL
+- Spring Validation
+- Spring Web
+- Spring Actuator
+- OpenAPI (Springdoc)
+- MapStruct
+- Lombok
+- MySQL
+- Docker
+- WireMock
+- JUnit 5
+- Mockito
+- Spotless
+- Checkstyle
+- Jacoco
+
+---
+
+# Arquitetura
+
+O projeto segue a divisão em módulos:
+
+\`\`\`
+modules
+├── application
+├── domain
+└── infrastructure
+\`\`\`
+
+## Domain
+
+Responsável pelas regras de negócio.
+
+Contém:
+
+- Entidades
+- Value Objects
+- Interfaces (Ports)
+- Regras de domínio
+- Exceções de domínio
+
+O módulo Domain **não possui dependências do Spring Framework**.
+
+---
+
+## Application
+
+Responsável pelos casos de uso do sistema.
+
+Contém:
+
+- UseCases
+- DTOs
+- Commands
+- Queries
+- Mappers
+- Validações de aplicação
+
+Toda regra de orquestração deve ficar neste módulo.
+
+---
+
+## Infrastructure
+
+Responsável pelas integrações externas.
+
+Contém:
+
+- Controllers REST
+- Configurações Spring
+- Implementações dos Repositories
+- Clients HTTP
+- Configuração do banco
+- Configuração do Swagger
+- Configuração de Observabilidade
+
+Também é o módulo responsável por iniciar a aplicação.
+
+---
+
+# Estrutura de Pastas
+
+\`\`\`
+modules
+├── application
+│   └── src/main/java
+│
+├── domain
+│   └── src/main/java
+│
+└── infrastructure
+    ├── src/main/java
+    └── src/main/resources
+        ├── application.yml
+        └── messages.properties
+\`\`\`
+
+---
+
+# Princípios adotados
+
+O projeto segue:
+
+- SOLID
+- Clean Architecture
+- Domain Driven Design (DDD)
+- API First
+- Separation of Concerns
+- Dependency Inversion
+- Baixo Acoplamento
+- Alta Coesão
+
+---
+
+# Build
+
+Instalar dependências
+
+\`\`\`bash
+make install
+\`\`\`
+
+ou
+
+\`\`\`bash
+./gradlew clean build
+\`\`\`
+
+---
+
+# Executando
+
+Subir infraestrutura
+
+\`\`\`bash
+make up
+\`\`\`
+
+Iniciar aplicação
+
+\`\`\`bash
+./gradlew :modules:infrastructure:bootRun
+\`\`\`
+
+---
+
+# Docker
+
+O projeto disponibiliza um ambiente local contendo:
+
+- MySQL
+- Redis
+- WireMock
+
+Subir containers
+
+\`\`\`bash
+docker compose up -d
+\`\`\`
+
+Parar containers
+
+\`\`\`bash
+docker compose down
+\`\`\`
+
+---
+
+# Qualidade de Código
+
+O projeto possui integração com:
+
+- Spotless
+- Checkstyle
+- Jacoco
+
+Executar validações
+
+\`\`\`bash
+./gradlew check
+\`\`\`
+
+---
+
+# API Documentation
+
+Após iniciar a aplicação:
+
+Swagger UI
+
+http://localhost:8080/swagger-ui.html
+
+OpenAPI
+
+http://localhost:8080/v3/api-docs
+
+---
+
+# Configuração
+
+As configurações da aplicação estão em:
+
+\`\`\`
+modules/infrastructure/src/main/resources/application.yml
+\`\`\`
+
+As mensagens internacionalizadas ficam em:
+
+\`\`\`
+modules/infrastructure/src/main/resources/messages.properties
+\`\`\`
+
+---
+
+# Fluxo de Desenvolvimento
+
+A implementação de novas funcionalidades deve seguir a ordem:
+
+1. Domain
+2. Application
+3. Infrastructure
+
+Mantendo sempre a independência do domínio.
+
+---
+
+# Convenções
+
+- Controllers apenas expõem endpoints.
+- Casos de uso ficam no módulo Application.
+- Regras de negócio ficam no Domain.
+- Implementações de portas ficam no Infrastructure.
+- DTOs não devem ser utilizados no Domain.
+- Entidades não devem depender do Spring.
+
+---
+
+# Testes
+
+Executar todos os testes
+
+\`\`\`bash
+./gradlew test
+\`\`\`
+
+Gerar relatório do Jacoco
+
+\`\`\`bash
+./gradlew jacocoTestReport
+\`\`\`
+
+---
+
+# Próximos Passos
+
+Após criar o projeto recomenda-se:
+
+- Configurar banco de dados
+- Criar o primeiro agregado do domínio
+- Definir os casos de uso
+- Implementar os endpoints REST
+- Escrever testes unitários
+- Documentar a API utilizando OpenAPI
+
+---
+
+Projeto criado automaticamente pelo template **API First Java**.
 EOF
 
 # Criar docker-compose.yml
